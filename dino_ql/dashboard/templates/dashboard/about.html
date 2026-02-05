@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Dino QL</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #3b82f6;
+        }
+
+        h2 {
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .contact-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .contact-list li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Dashboard</a>
+
+        <h1>About Dino QL</h1>
+
+        <p>This project demonstrates Reinforcement Learning agents learning to play the Dino Run game.</p>
+
+        <h2>Q-Learning (Tabular)</h2>
+        <p>
+            Q-Learning is a model-free reinforcement learning algorithm. It learns the value of being in a given state
+            and taking a specific action (the "Quality" or "Q-value").
+            In the <strong>Tabular</strong> approach used here, we discretize the continuous game state (speed, distance
+            to obstacle, etc.) into a finite set of "buckets".
+            The agent maintains a lookup table (Q-table) where rows are states and columns are actions (Jump or Do
+            Nothing).
+            It updates these values based on the reward received + estimated future rewards.
+        </p>
+
+        <h2>Deep Q-Learning (DQL)</h2>
+        <p>
+            Deep Q-Learning extends Q-Learning to handle high-dimensional or continuous state spaces without manual
+            discretization.
+            Instead of a table, it uses a <strong>Neural Network</strong> to approximate the Q-value function.
+            The network takes the continuous state variables as input and outputs the estimated Q-value for each
+            possible action.
+            This allows the agent to generalize better to unseen states but typically requires more training time and
+            computational resources.
+        </p>
+
+        <h2>Contact</h2>
+        <p>Created by <strong>Mario Campos</strong>.</p>
+        <ul class="contact-list">
+            <li>🌐 Personal Site: <a href="https://mcampos.cloud" target="_blank">mcampos.cloud</a></li>
+            <li>👔 LinkedIn: <a href="https://www.linkedin.com/in/mariocampossoberanis/"
+                    target="_blank">mariocampossoberanis</a></li>
+            <li>🐙 GitHub: <a href="https://github.com/MaxSob" target="_blank">MaxSob</a></li>
+            <li>📝 Blog: <a href="https://medium.com/@mario.campos.soberanis" target="_blank">Medium</a></li>
+            <li>🐦 X (Twitter): <a href="https://x.com/mario_campos_" target="_blank">@mario_campos_</a></li>
+        </ul>
+
+        <div style="margin-top: 40px; font-size: 0.9em; color: #666; border-top: 1px solid #eee; padding-top: 20px;">
+            © Mario Campos 2026
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dino QL Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media(min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            margin-top: 0;
+        }
+
+        canvas {
+            width: 100%;
+        }
+
+        #gameCanvas {
+            background: #f7f7f7;
+            border: 1px solid #ddd;
+            width: 100%;
+            height: 300px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Dino QL Training Dashboard</h1>
+
+    <div style="margin-bottom: 20px;">
+        <label for="runSelect" style="font-weight: bold; margin-right: 10px;">Select Run:</label>
+        <select id="runSelect" onchange="window.location.href='/?run_id='+this.value"
+            style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            {% for run in runs %}
+            <option value="{{ run.id }}" {% if run.id == latest_run.id %}selected{% endif %}>
+                Run {{ run.id }} - {{ run.timestamp|date:"Y-m-d H:i" }} ({{ run.description }})
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    {% if latest_run %}
+    <div class="stats">
+        <div class="stat-box">
+            <div>Current Run ID</div>
+            <div class="stat-value">{{ latest_run.id }}</div>
+        </div>
+        <div class="stat-box">
+            <div>Description</div>
+            <div>{{ latest_run.description }}</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Score Progression</h2>
+            <canvas id="scoreChart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Policy Replay</h2>
+            <div style="margin-bottom: 10px;">
+                <select id="episodeSelect" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">Select Episode to Replay</option>
+                </select>
+                <button onclick="playReplay()"
+                    style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">Play</button>
+                <span id="replayStatus" style="margin-left: 10px; color: #666;"></span>
+            </div>
+            <div>
+                <canvas id="gameCanvas" width="800" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p>No training runs found. Start the training script first.</p>
+    {% endif %}
+
+    <footer style="margin-top: 40px; text-align: center; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
+        <p>
+            © Mario Campos 2026 | <a href="https://mcampos.cloud" target="_blank"
+                style="color: #3b82f6; text-decoration: none;">mcampos.cloud</a>
+            <br>
+            <a href="/about/" style="color: #3b82f6; text-decoration: none; font-weight: bold;">About & How it Works</a>
+        </p>
+    </footer>
+
+    <script>
+        const runId = {{ latest_run.id|default:"null" }};
+        let chartInstance = null;
+        let replayData = [];
+        let animationId = null;
+
+        if (runId) {
+            // Load Charts
+            fetch(`/api/run/${runId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('scoreChart').getContext('2d');
+                    chartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.episodes,
+                            datasets: [{
+                                label: 'Score per Episode',
+                                data: data.scores,
+                                borderColor: '#3b82f6',
+                                tension: 0.1,
+                                pointRadius: 1
+                            }]
+                        },
+                        options: {
+                            animation: false
+                        }
+                    });
+
+                    // Populate Replay Dropdown
+                    const select = document.getElementById('episodeSelect');
+                    data.episodes.forEach((epNum, index) => {
+                        if (data.has_replay[index]) {
+                            const opt = document.createElement('option');
+                            opt.value = data.ids[index]; // Use DB ID
+                            opt.textContent = `Episode ${epNum} (Score: ${data.scores[index]})`;
+                            select.appendChild(opt);
+                        }
+                    });
+                });
+        }
+
+        function playReplay() {
+            const episodeId = document.getElementById('episodeSelect').value;
+            if (!episodeId) return;
+
+            document.getElementById('replayStatus').textContent = "Loading...";
+
+            fetch(`/api/episode/${episodeId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    replayData = data; // List of state dicts
+                    document.getElementById('replayStatus').textContent = `Playing ${data.length} frames...`;
+                    startAnimation();
+                });
+        }
+
+        function startAnimation() {
+            if (animationId) cancelAnimationFrame(animationId);
+            let frameIndex = 0;
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Scaling factors (assuming game coordinates are roughly 0-1200 width, 0-300 height?)
+            // In game.py: 
+            // obstacle_x start ~1000. 
+            // Player box 40x40. player_y 0 is ground.
+            // Let's assume logical width 1200, height 300.
+
+            const scaleX = canvas.width / 1200;
+            const scaleY = canvas.height / 300;
+
+            function draw() {
+                if (frameIndex >= replayData.length) {
+                    document.getElementById('replayStatus').textContent = "Finished.";
+                    return;
+                }
+
+                const state = replayData[frameIndex];
+
+                // Desert Background
+                // Sky
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Ground/Sand
+                ctx.fillStyle = '#E6C288'; // Sand color
+                ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+                // Ground Line
+                ctx.strokeStyle = '#D4A060';
+                ctx.beginPath();
+                ctx.moveTo(0, canvas.height - 20);
+                ctx.lineTo(canvas.width, canvas.height - 20);
+                ctx.stroke();
+
+                // Dino (Player) using player_y
+                // Coordinate system in game: y=0 is ground (bottom).
+                // HTML Canvas: y=0 is top.
+                // So y_canvas = canvas.height - 10 - player_y - player_height
+                const playerW = 40 * scaleX;
+                const playerH = 40 * scaleY;
+                const playerX = 100 * scaleX;
+                const visualPlayerX = 50;
+
+                const groundY = canvas.height - 30; // 20px sand + 10px buffer roughly
+                const dinoY = groundY - (state.player_y * scaleY) - playerH;
+
+                // Draw Dino Emoji (Flipped)
+                ctx.save();
+                ctx.translate(visualPlayerX + playerW / 2, dinoY + playerH);
+                ctx.scale(-1, 1);
+                ctx.font = `${playerH}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText("🦖", 0, 0);
+                ctx.restore();
+
+                // Obstacle
+                // game.py: obstacle_x is relative to player? No, it moves towards 0. 
+                // "Move obstacle: obstacle_x -= speed". "Spawn: 800-1200".
+                // "Player box x=0 to 40".
+                // So obstacle_x is absolute position where 0 is player.
+                // We should offset everything.
+
+                const obsX = visualPlayerX + (state.obstacle_x * scaleX);
+                const obsW = state.obstacle_width * scaleX;
+                const obsH = state.obstacle_height * scaleY;
+                const obsY = groundY - obsH;
+
+                // Draw Building Emojis
+                const buildingSize = 25 * scaleY; // Approx height per building block
+                const numBuildings = Math.max(1, Math.ceil(obsH / buildingSize));
+
+                ctx.font = `${buildingSize}px Arial`;
+                for (let i = 0; i < numBuildings; i++) {
+                    // Stack from bottom up
+                    const buildingY = groundY - (i * buildingSize);
+                    ctx.fillText("🏢", obsX + obsW / 2, buildingY);
+                }
+                //ctx.fillStyle = '#dc2626';
+                //ctx.fillRect(obsX, obsY, obsW, obsH);
+
+                // Stats
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.fillText(`Score: ${Math.floor(state.score)}`, 10, 20);
+                ctx.fillText(`Speed: ${state.speed.toFixed(1)}`, 10, 40);
+
+                frameIndex++;
+                animationId = requestAnimationFrame(draw);
+            }
+
+            draw();
+        }
+    </script>
+</body>
+
+</html>
