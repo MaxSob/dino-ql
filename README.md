@@ -1,6 +1,6 @@
 # DinoQL
 
-**Author:** [Mario Campos](https://linkedin.com/in/mariocampos) · [Website](https://mariocampos.com)
+**Author:** [Mario Campos](https://www.linkedin.com/in/mariocampossoberanis) · [Website](https://mcampos.cloud)
 
 DinoQL is a reinforcement learning agent that plays the game of Dino Run using Q-Learning.
 ![cover](dino-ql-cover.png)
